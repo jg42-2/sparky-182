@@ -1,0 +1,123 @@
+### sparky-182 · pruebas rápidas de la API
+### Instala la extensión "REST Client" en VS Code y haz clic en "Send Request" encima de cada petición.
+### El backend tiene que estar corriendo (.\mvnw.cmd spring-boot:run).
+
+@base = http://localhost:8080/api
+
+### 1) Login con el usuario demo (guarda el token para las demás)
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "fan@sparky182.com", "password": "fan123" }
+
+###
+@token = {{login.response.body.$.token}}
+
+### Registro (cambia el email si ya existe: 409)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{ "email": "joseph@test.com", "password": "123456", "name": "Joseph" }
+
+### Registro inválido (400 con "fields")
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{ "email": "no-es-correo", "password": "123", "name": "" }
+
+### Álbumes (público)
+GET {{base}}/albums
+
+### Detalle de un álbum (público)
+GET {{base}}/albums/3
+
+### Canciones de un álbum (público)
+GET {{base}}/albums/3/songs
+
+### Buscar canciones con paginación (público)
+GET {{base}}/songs?search=the&page=0&size=5
+
+### Agregar favorito (token)
+POST {{base}}/user/favorites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "songId": 15 }
+
+### Quitar favorito: DELETE con body (token)
+DELETE {{base}}/user/favorites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "songId": 15 }
+
+### No existe GET de favoritos (405): por eso el frontend guarda su propia lista
+GET {{base}}/user/favorites
+Authorization: Bearer {{token}}
+
+### Historial: crear o actualizar status (token)
+POST {{base}}/user/history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "albumId": 2, "status": "escuchando" }
+
+### Historial con status inválido (400)
+POST {{base}}/user/history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "albumId": 2, "status": "Escuchado" }
+
+### Quitar del historial (token)
+DELETE {{base}}/user/history
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "albumId": 2 }
+
+### Mi perfil (token)
+GET {{base}}/user/me
+Authorization: Bearer {{token}}
+
+### Cambiar mi nombre (token)
+PATCH {{base}}/user/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Fan Pop-Punk" }
+
+### Reseñas de un álbum (público)
+GET {{base}}/albums/4/reviews
+
+### Crear reseña (token) -> 201; si repites -> 409
+POST {{base}}/albums/4/reviews
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "rating": 5, "comment": "First Date suena a verano." }
+
+### Borrar reseña ajena (la 2 es de Ana) -> 403
+DELETE {{base}}/reviews/2
+Authorization: Bearer {{token}}
+
+### Tours (público, ficticios)
+GET {{base}}/tours?city=&page=0&size=5
+
+### Comprar entradas (token). Buenos Aires tiene 3: pedir 5 -> 400
+POST {{base}}/tours/3/tickets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "quantity": 5 }
+
+### Crear fecha como USER -> 403 (solo ADMIN)
+POST {{base}}/admin/tours
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "city": "Arequipa", "country": "Perú", "venue": "Coliseo Demo", "date": "2027-08-15", "ticketsAvailable": 500, "price": 220 }
+
+### Sin token -> 401
+GET {{base}}/user/me
